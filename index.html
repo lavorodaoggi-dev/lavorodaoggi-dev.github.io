@@ -1,1 +1,311 @@
-<script>function addRow(){var list=document.getElementById('itemsList');var row=document.createElement('div');row.className='items-row';row.innerHTML='<input type="number" class="qty-inp" value="1" min="1" onchange="calc()">'+'<input type="text" class="desc-inp" placeholder="اسم المنتج">'+'<input type="number" class="price-inp" value="0" step="0.01" onchange="calc()">'+'<div class="line-total">0.00</div>'+'<button class="btn btn-remove" onclick="removeRow(this)">×</button>';list.appendChild(row);calc()}function removeRow(btn){var rows=document.querySelectorAll('#itemsList .items-row');if(rows.length>1){btn.closest('.items-row').remove();calc()}else{alert('لا يمكن حذف آخر بند!')}}function calc(){var rows=document.querySelectorAll('#itemsList .items-row');var totalHT=0;for(var i=0;i<rows.length;i++){var q=parseFloat(rows[i].querySelector('.qty-inp').value)||0;var p=parseFloat(rows[i].querySelector('.price-inp').value)||0;var l=q*p;rows[i].querySelector('.line-total').textContent=l.toFixed(2);totalHT+=l}var v=parseFloat(document.getElementById('tvaRate').value)||0;var tv=totalHT*(v/100);document.getElementById('summaryBox').textContent='HT: '+totalHT.toFixed(2)+' | TVA ('+v+'%): '+tv.toFixed(2)+' | TTC: '+(totalHT+tv).toFixed(2);return{totalHT:totalHT,tva:tv,ttc:totalHT+tv,rate:v}}function generate(){var totals=calc();document.getElementById('previewTopIds').innerHTML='<span>RC: '+document.getElementById('sellerRC').value+'</span> | '+'<span>ICE : '+document.getElementById('sellerICE').value+'</span> | '+'<span>PATENTE : '+document.getElementById('sellerPatente').value+'</span> | '+'<span>IF : '+document.getElementById('sellerIF').value+'</span> | '+'<span>CNSS : '+document.getElementById('sellerCNSS').value+'</span> | '+'<span>RIB : '+document.getElementById('sellerRIB').value+'</span>';document.getElementById('previewLogoText').textContent=document.getElementById('logoText').value;document.getElementById('previewLogoSub').textContent=document.getElementById('logoSub').value;document.getElementById('previewCompanyName').textContent=document.getElementById('sellerName').value;document.getElementById('previewCompanyBank').textContent=document.getElementById('sellerBank').value;var d=document.getElementById('invoiceDate').value;var place=document.getElementById('invoicePlace').value;var fd=d?new Date(d).toLocaleDateString('fr-FR'):'';document.getElementById('previewDatePlace').textContent='A '+place+' Le '+fd;document.getElementById('previewInvoiceNum').textContent='FACTURE N° : '+document.getElementById('invoiceNum').value;document.getElementById('previewBuyerName').textContent=document.getElementById('buyerName').value;var ice=document.getElementById('buyerIce').value;document.getElementById('previewBuyerIce').textContent=ice?'ICE: '+ice:'';var pb=document.getElementById('previewItemsBody');pb.innerHTML='';var rows=document.querySelectorAll('#itemsList .items-row');for(var i=0;i<rows.length;i++){var q=rows[i].querySelector('.qty-inp').value;var desc=rows[i].querySelector('.desc-inp').value;var p=rows[i].querySelector('.price-inp').value;var l=rows[i].querySelector('.line-total').textContent;var div=document.createElement('div');div.className='item-row';div.innerHTML='<div class="col-q">'+q+'</div>'+'<div class="col-d">'+desc+'</div>'+'<div class="col-p">'+parseFloat(p).toFixed(2)+'</div>'+'<div class="col-t">'+l+'</div>';pb.appendChild(div)}document.getElementById('previewTotalHT').textContent=totals.totalHT.toFixed(2);document.getElementById('previewTvaRate').textContent=totals.rate;document.getElementById('previewTVA').textContent=totals.tva.toFixed(2);document.getElementById('previewTotalTTC').textContent=totals.ttc.toFixed(2);document.getElementById('previewFooterAddress').innerHTML=document.getElementById('sellerAddress').value.replace(/, /g,'<br>');document.getElementById('previewFooterPhone').textContent=document.getElementById('sellerPhone').value;document.getElementById('previewFooterEmail').textContent=document.getElementById('sellerEmail').value;document.getElementById('invoicePreview').classList.remove('hidden');document.getElementById('printBtn').classList.remove('hidden');document.getElementById('invoicePreview').scrollIntoView({behavior:'smooth'})}calc()</script></body></html>
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Facture Bot</title>
+<style>
+@page { size: A4; margin: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; background: #eef2f7; color: #000; }
+.container { max-width: 900px; margin: 0 auto; padding: 15px; }
+.form-section { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 15px; }
+.form-section h2 { color: #1a5276; margin-bottom: 12px; font-size: 16px; border-bottom: 2px solid #3498db; padding-bottom: 6px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+@media(max-width: 600px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } .container { padding: 10px; } .form-section { padding: 15px; } }
+.form-group { margin-bottom: 10px; }
+.form-group label { display: block; font-weight: 600; color: #2c3e50; margin-bottom: 4px; font-size: 13px; }
+.form-group input { width: 100%; padding: 10px 12px; border: 1px solid #d5dbdb; border-radius: 8px; font-family: Arial, sans-serif; font-size: 14px; -webkit-appearance: none; }
+.form-group input:focus { outline: none; border-color: #3498db; }
+.items-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 6px; }
+.items-row input { padding: 8px; border: 1px solid #d5dbdb; border-radius: 6px; font-family: Arial, sans-serif; font-size: 13px; }
+.items-row .qty-inp { width: 60px; text-align: center; }
+.items-row .desc-inp { flex: 1; }
+.items-row .price-inp { width: 100px; }
+.items-row .line-total { width: 80px; text-align: center; font-weight: 700; font-size: 13px; }
+.btn { padding: 10px 18px; border: none; border-radius: 8px; font-family: Arial, sans-serif; font-weight: 700; cursor: pointer; font-size: 14px; touch-action: manipulation; }
+.btn:active { opacity: 0.8; }
+.btn-add { background: #27ae60; color: #fff; width: auto; display: inline-block; padding: 8px 14px; font-size: 13px; }
+.btn-remove { background: #e74c3c; color: #fff; width: auto; padding: 5px 10px; font-size: 12px; }
+.btn-generate { background: #2980b9; color: #fff; font-size: 16px; padding: 14px; display: block; width: 100%; margin-bottom: 15px; }
+.btn-print { background: #1a5276; color: #fff; font-size: 16px; padding: 14px; display: block; width: 100%; margin-bottom: 15px; }
+.summary-box { background: #eaf2f8; padding: 12px; border-radius: 8px; margin: 10px 0; text-align: center; font-size: 14px; font-weight: 700; color: #1a5276; }
+.invoice-preview { background: #fff; width: 210mm; height: 297mm; margin: 0 auto; position: relative; overflow: hidden; box-shadow: 0 0 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; }
+.top-ids { text-align: center; font-size: 9px; color: #333; padding: 6px 40px 4px; line-height: 1.5; flex-shrink: 0; }
+.top-ids span { display: inline-block; margin: 0 2px; }
+.invoice-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 50px 6px; border-bottom: 2px solid #1a5276; flex-shrink: 0; }
+.logo-left { display: flex; align-items: center; gap: 6px; }
+.logo-script { font-family: 'Brush Script MT', 'Segoe Script', cursive; font-size: 32px; color: #1a5276; font-style: italic; line-height: 0.9; }
+.logo-sub-row { display: flex; align-items: center; margin-top: 2px; gap: 4px; }
+.logo-sub { font-size: 12px; font-weight: bold; color: #2c3e50; letter-spacing: 4px; }
+.logo-icon { width: 22px; height: 22px; border: 2px solid #1a5276; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.logo-icon svg { width: 12px; height: 12px; }
+.company-right { text-align: right; margin-top: 6px; }
+.company-name { font-size: 18px; color: #2e86ab; font-weight: 400; }
+.company-bank { font-size: 9px; color: #666; margin-top: 2px; }
+.invoice-body { padding: 15px 50px 10px; position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; }
+.invoice-meta { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 12px; line-height: 1.6; color: #000; flex-shrink: 0; }
+.meta-left { text-align: left; }
+.meta-left div { margin-bottom: 2px; }
+.meta-right { text-align: right; }
+.meta-right .client-name { font-size: 13px; color: #000; margin-bottom: 2px; }
+.meta-right .client-ice { font-size: 11px; color: #333; }
+.items-header { display: flex; background: #d4e6f1; border: 1px solid #a0c4e0; font-weight: bold; font-size: 12px; color: #1a5276; padding: 8px 0; text-align: center; flex-shrink: 0; }
+.items-header .col-q { width: 15%; }
+.items-header .col-d { width: 40%; text-align: left; padding-left: 15px; }
+.items-header .col-p { width: 22%; }
+.items-header .col-t { width: 23%; }
+.items-body { flex-shrink: 0; }
+.item-row { display: flex; background: #e8f0f8; border: 1px solid #b0c4de; border-top: none; font-size: 12px; padding: 10px 0; text-align: center; color: #000; }
+.item-row .col-q { width: 15%; }
+.item-row .col-d { width: 40%; text-align: left; padding-left: 15px; }
+.item-row .col-p { width: 22%; }
+.item-row .col-t { width: 23%; }
+.totals-wrap { flex-shrink: 0; }
+.total-row { display: flex; border: 1px solid #b0c4de; border-top: none; font-size: 12px; font-weight: bold; padding: 8px 12px; }
+.total-row .label { width: 75%; text-align: left; background: #f0f5fa; color: #1a5276; margin: -8px 0 -8px -12px; padding: 8px 12px; }
+.total-row .value { width: 25%; text-align: center; color: #000; }
+.total-row.tva .label { background: #e8f0f8; }
+.total-row.tva .value { background: #e8f0f8; }
+.total-row.final .label { background: #d4e6f1; color: #1a5276; }
+.total-row.final .value { background: #d4e6f1; color: #1a5276; }
+.invoice-footer { display: flex; justify-content: space-around; padding: 20px 50px 8px; text-align: center; flex-shrink: 0; }
+.footer-item { flex: 1; }
+.footer-icon-box { width: 28px; height: 28px; background: #1a5276; margin: 0 auto 5px; display: flex; align-items: center; justify-content: center; border-radius: 3px; }
+.footer-icon-box svg { width: 13px; height: 13px; fill: #fff; }
+.footer-text { font-size: 10px; color: #333; line-height: 1.4; }
+.bottom-bar { height: 40px; display: flex; flex-shrink: 0; margin-top: auto; }
+.bottom-left { width: 52%; background: #2c3e50; clip-path: polygon(0 0, 100% 0, 95% 100%, 0 100%); position: relative; z-index: 2; }
+.bottom-mid1 { width: 6%; background: #2980b9; transform: skewX(-20deg); margin-left: -10px; position: relative; z-index: 1; }
+.bottom-mid2 { width: 6%; background: #1a5276; transform: skewX(-20deg); margin-left: -5px; position: relative; z-index: 1; }
+.bottom-right { flex: 1; background: #154360; margin-left: -5px; position: relative; z-index: 2; }
+.hidden { display: none !important; }
+@media print { body { background: #fff; padding: 0; } .form-section, .btn-generate, .btn-print { display: none !important; } .invoice-preview { box-shadow: none; margin: 0; width: 100%; height: 100vh; } }
+@media screen { .invoice-preview { box-shadow: 0 0 30px rgba(0,0,0,0.15); } }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="form-section">
+<h2>📝 معلومات الشركة</h2>
+<div class="grid-3">
+<div class="form-group"><label>اسم الشركة</label><input id="sellerName" value="HMENTE DATA SARLAU"></div>
+<div class="form-group"><label>اللوجو (نص)</label><input id="logoText" value="Hmente"></div>
+<div class="form-group"><label>اللوجو (فرعي)</label><input id="logoSub" value="DATA"></div>
+<div class="form-group"><label>العنوان</label><input id="sellerAddress" value="77 RUE MOHAMED SMIHA CASABLANCA"></div>
+<div class="form-group"><label>الهاتف</label><input id="sellerPhone" value="+212 6 61 51 52 28"></div>
+<div class="form-group"><label>Email</label><input id="sellerEmail" value="hmentedata@gmail.com"></div>
+<div class="form-group"><label>RC</label><input id="sellerRC" value="715947"></div>
+<div class="form-group"><label>ICE</label><input id="sellerICE" value="003907357000016"></div>
+<div class="form-group"><label>PATENTE</label><input id="sellerPatente" value="32109886"></div>
+<div class="form-group"><label>IF</label><input id="sellerIF" value="71837880"></div>
+<div class="form-group"><label>CNSS</label><input id="sellerCNSS" value="6736395"></div>
+<div class="form-group"><label>RIB</label><input id="sellerRIB" value="007 780 0000102000005425 59"></div>
+<div class="form-group" style="grid-column:span 3"><label>البنك</label><input id="sellerBank" value="CENTE D'AFFAIRE ATTIJARI WAFABANK"></div>
+</div>
+</div>
+<div class="form-section">
+<h2>👤 معلومات الزبون</h2>
+<div class="grid-2">
+<div class="form-group"><label>اسم الزبون</label><input id="buyerName" value="IMPRIMERIE MODERNE CASABLANCA"></div>
+<div class="form-group"><label>ICE</label><input id="buyerIce" value="0000838020000065"></div>
+</div>
+</div>
+<div class="form-section">
+<h2>📅 تفاصيل الفاتورة</h2>
+<div class="grid-3">
+<div class="form-group"><label>رقم الفاتورة</label><input id="invoiceNum" value="0501/26"></div>
+<div class="form-group"><label>التاريخ</label><input type="date" id="invoiceDate" value="2026-05-15"></div>
+<div class="form-group"><label>المكان</label><input id="invoicePlace" value="CASABLANCA"></div>
+<div class="form-group"><label>TVA %</label><input type="number" id="tvaRate" value="20" min="0" max="100"></div>
+</div>
+</div>
+<div class="form-section">
+<h2>🛒 البنود</h2>
+<div id="itemsList">
+<div class="items-row">
+<input type="number" class="qty-inp" value="4" min="1" onchange="calc()">
+<input type="text" class="desc-inp" value="HP 222A (W2220A)">
+<input type="number" class="price-inp" value="862.50" step="0.01" onchange="calc()">
+<div class="line-total">0.00</div>
+<button class="btn btn-remove" onclick="removeRow(this)">×</button>
+</div>
+</div>
+<button class="btn btn-add" onclick="addRow()">➕ إضافة بند</button>
+<div class="summary-box" id="summaryBox">HT: 0.00 | TVA: 0.00 | TTC: 0.00</div>
+</div>
+<button class="btn btn-generate" onclick="generate()">🖨️ عرض الفاتورة</button>
+<div id="invoicePreview" class="invoice-preview hidden">
+<div class="top-ids" id="previewTopIds">
+<span>RC: 715947</span> | <span>ICE : 003907357000016</span> | <span>PATENTE : 32109886</span> |
+<span>IF : 71837880</span> | <span>CNSS : 6736395</span> | <span>RIB : 007 780 0000102000005425 59</span>
+</div>
+<div class="invoice-header">
+<div class="logo-left">
+<div>
+<div class="logo-script" id="previewLogoText">Hmente</div>
+<div class="logo-sub-row">
+<div class="logo-sub" id="previewLogoSub">DATA</div>
+<div class="logo-icon">
+<svg viewBox="0 0 24 24" fill="none" stroke="#1a5276" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+</div>
+</div>
+</div>
+</div>
+<div class="company-right">
+<div class="company-name" id="previewCompanyName">HMENTE DATA SARLAU</div>
+<div class="company-bank" id="previewCompanyBank">CENTE D'AFFAIRE ATTIJARI WAFABANK</div>
+</div>
+</div>
+<div class="invoice-body">
+<div class="invoice-meta">
+<div class="meta-left">
+<div id="previewDatePlace">A CASABLANCA Le 15/05/2026</div>
+<div id="previewInvoiceNum">FACTURE N° : 0501/26</div>
+</div>
+<div class="meta-right">
+<div class="client-name" id="previewBuyerName">IMPRIMERIE MODERNE CASABLANCA</div>
+<div class="client-ice" id="previewBuyerIce">ICE: 0000838020000065</div>
+</div>
+</div>
+<div class="items-header">
+<div class="col-q">Quantité</div>
+<div class="col-d">Designation</div>
+<div class="col-p">P.U HT ( MAD)</div>
+<div class="col-t">Total HT ( MAD)</div>
+</div>
+<div class="items-body" id="previewItemsBody"></div>
+<div class="totals-wrap">
+<div class="total-row">
+<div class="label">TOTAL HT (MAD)</div>
+<div class="value" id="previewTotalHT">0.00</div>
+</div>
+<div class="total-row tva">
+<div class="label">TVA <span id="previewTvaRate">20</span> % (MAD)</div>
+<div class="value" id="previewTVA">0.00</div>
+</div>
+<div class="total-row final">
+<div class="label">TOTAL TTC (MAD)</div>
+<div class="value" id="previewTotalTTC">0.00</div>
+</div>
+</div>
+</div>
+<div class="invoice-footer">
+<div class="footer-item">
+<div class="footer-icon-box">
+<svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+</div>
+<div class="footer-text" id="previewFooterAddress">77 RUE MOHAMED SMIHA<br>ETG 10 N°57 CASABLANCA</div>
+</div>
+<div class="footer-item">
+<div class="footer-icon-box">
+<svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+</div>
+<div class="footer-text" id="previewFooterPhone">+212 6 61 51 52 28</div>
+</div>
+<div class="footer-item">
+<div class="footer-icon-box">
+<svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+</div>
+<div class="footer-text" id="previewFooterEmail">hmentedata@gmail.com</div>
+</div>
+</div>
+<div class="bottom-bar">
+<div class="bottom-left"></div>
+<div class="bottom-mid1"></div>
+<div class="bottom-mid2"></div>
+<div class="bottom-right"></div>
+</div>
+</div>
+<button class="btn btn-print hidden" id="printBtn" onclick="window.print()">🖨️ طباعة / حفظ PDF</button>
+</div>
+<script>
+function addRow() {
+var list = document.getElementById('itemsList');
+var row = document.createElement('div');
+row.className = 'items-row';
+row.innerHTML = '<input type="number" class="qty-inp" value="1" min="1" onchange="calc()">' +
+'<input type="text" class="desc-inp" placeholder="اسم المنتج">' +
+'<input type="number" class="price-inp" value="0" step="0.01" onchange="calc()">' +
+'<div class="line-total">0.00</div>' +
+'<button class="btn btn-remove" onclick="removeRow(this)">×</button>';
+list.appendChild(row);
+calc();
+}
+function removeRow(btn) {
+var rows = document.querySelectorAll('#itemsList .items-row');
+if (rows.length > 1) {
+btn.closest('.items-row').remove();
+calc();
+} else {
+alert('لا يمكن حذف آخر بند!');
+}
+}
+function calc() {
+var rows = document.querySelectorAll('#itemsList .items-row');
+var totalHT = 0;
+for (var i = 0; i < rows.length; i++) {
+var q = parseFloat(rows[i].querySelector('.qty-inp').value) || 0;
+var p = parseFloat(rows[i].querySelector('.price-inp').value) || 0;
+var l = q * p;
+rows[i].querySelector('.line-total').textContent = l.toFixed(2);
+totalHT += l;
+}
+var v = parseFloat(document.getElementById('tvaRate').value) || 0;
+var tv = totalHT * (v / 100);
+document.getElementById('summaryBox').textContent = 'HT: ' + totalHT.toFixed(2) + ' | TVA (' + v + '%): ' + tv.toFixed(2) + ' | TTC: ' + (totalHT + tv).toFixed(2);
+return { totalHT: totalHT, tva: tv, ttc: totalHT + tv, rate: v };
+}
+function generate() {
+var totals = calc();
+document.getElementById('previewTopIds').innerHTML =
+'<span>RC: ' + document.getElementById('sellerRC').value + '</span> | ' +
+'<span>ICE : ' + document.getElementById('sellerICE').value + '</span> | ' +
+'<span>PATENTE : ' + document.getElementById('sellerPatente').value + '</span> | ' +
+'<span>IF : ' + document.getElementById('sellerIF').value + '</span> | ' +
+'<span>CNSS : ' + document.getElementById('sellerCNSS').value + '</span> | ' +
+'<span>RIB : ' + document.getElementById('sellerRIB').value + '</span>';
+document.getElementById('previewLogoText').textContent = document.getElementById('logoText').value;
+document.getElementById('previewLogoSub').textContent = document.getElementById('logoSub').value;
+document.getElementById('previewCompanyName').textContent = document.getElementById('sellerName').value;
+document.getElementById('previewCompanyBank').textContent = document.getElementById('sellerBank').value;
+var d = document.getElementById('invoiceDate').value;
+var place = document.getElementById('invoicePlace').value;
+var fd = d ? new Date(d).toLocaleDateString('fr-FR') : '';
+document.getElementById('previewDatePlace').textContent = 'A ' + place + ' Le ' + fd;
+document.getElementById('previewInvoiceNum').textContent = 'FACTURE N° : ' + document.getElementById('invoiceNum').value;
+document.getElementById('previewBuyerName').textContent = document.getElementById('buyerName').value;
+var ice = document.getElementById('buyerIce').value;
+document.getElementById('previewBuyerIce').textContent = ice ? 'ICE: ' + ice : '';
+var pb = document.getElementById('previewItemsBody');
+pb.innerHTML = '';
+var rows = document.querySelectorAll('#itemsList .items-row');
+for (var i = 0; i < rows.length; i++) {
+var q = rows[i].querySelector('.qty-inp').value;
+var desc = rows[i].querySelector('.desc-inp').value;
+var p = rows[i].querySelector('.price-inp').value;
+var l = rows[i].querySelector('.line-total').textContent;
+var div = document.createElement('div');
+div.className = 'item-row';
+div.innerHTML = '<div class="col-q">' + q + '</div>' +
+'<div class="col-d">' + desc + '</div>' +
+'<div class="col-p">' + parseFloat(p).toFixed(2) + '</div>' +
+'<div class="col-t">' + l + '</div>';
+pb.appendChild(div);
+}
+document.getElementById('previewTotalHT').textContent = totals.totalHT.toFixed(2);
+document.getElementById('previewTvaRate').textContent = totals.rate;
+document.getElementById('previewTVA').textContent = totals.tva.toFixed(2);
+document.getElementById('previewTotalTTC').textContent = totals.ttc.toFixed(2);
+document.getElementById('previewFooterAddress').innerHTML = document.getElementById('sellerAddress').value.replace(/, /g, '<br>');
+document.getElementById('previewFooterPhone').textContent = document.getElementById('sellerPhone').value;
+document.getElementById('previewFooterEmail').textContent = document.getElementById('sellerEmail').value;
+document.getElementById('invoicePreview').classList.remove('hidden');
+document.getElementById('printBtn').classList.remove('hidden');
+document.getElementById('invoicePreview').scrollIntoView({ behavior: 'smooth' });
+}
+calc();
+</script>
+</body>
+</html>
